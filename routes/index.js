@@ -82,19 +82,6 @@ router.post('/sync', async (req, res) => {
   }
 });
 
-// Simular la siguiente fecha bajo demanda
-router.post('/simulate', (req, res) => {
-  try {
-    const scraperModule = require('../services/scraper');
-    scraperModule.simulateNextMatches();
-    const fixtureService = require('../services/fixtureService');
-    fixtureService.updatePlayoffBracket();
-    res.redirect('/');
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al simular partidos.');
-  }
-});
 
 // Actualizar un partido individualmente (carga manual de goles)
 router.post('/matches/update', (req, res) => {
