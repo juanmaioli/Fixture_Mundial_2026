@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏆 Fixture Mundial 2026 - Carga de Resultados</title>
+  <!-- Favicon inline con emoji -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body>
+
+  <!-- Overlay de carga dinámico -->
+  <div id="spinner-overlay">
+    <div class="spinner-border text-success" style="width: 3rem; height: 3rem;" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <h3 class="mt-3 text-success font-weight-bold">Buscando resultados en Internet...</h3>
+    <p class="text-secondary">Conectando a la red y actualizando posiciones...</p>
+  </div>
+
+  <!-- Header principal -->
+  <header class="hero-header py-4 mb-4">
+    <div class="container text-center">
+      <h1 class="display-5 title-gradient mb-2">🏆 FIXTURE MUNDIAL 2026</h1>
+      <p class="text-secondary fs-5 mb-3">Seguimiento en directo. Sincronizá con internet o cargá resultados a mano.</p>
+      
+      <!-- Panel de estadísticas y control -->
+      <div class="row justify-content-center align-items-center g-3">
+        <div class="col-auto">
+          <div class="bg-dark px-3 py-2 rounded-pill border border-secondary d-flex align-items-center gap-2">
+            <span class="badge bg-success rounded-pill"><%= stats.played %></span>
+            <span class="text-secondary small">Jugados</span>
+            <span class="badge bg-warning text-dark rounded-pill"><%= stats.pending %></span>
+            <span class="text-secondary small">Pendientes</span>
+            <span class="badge bg-primary rounded-pill"><%= stats.total %></span>
+            <span class="text-secondary small">Total partidos</span>
+          </div>
+        </div>
+        
+        <div class="col-auto d-flex gap-2">
+          <form action="/sync" method="POST" onsubmit="showLoading()">
+            <button type="submit" class="btn btn-sync px-3 py-2 text-white">
+              🌐 Sincronizar Internet
+            </button>
+          </form>
+
+          <form action="/simulate" method="POST">
+            <button type="submit" class="btn btn-outline-success px-3 py-2">
+              🎲 Simular Fecha
+            </button>
+          </form>
+          
+          <form action="/reset" method="POST" onsubmit="return confirm('¿Seguro que querés reiniciar todos los resultados a cero?')">
+            <button type="submit" class="btn btn-reset-custom px-3 py-2">
+              🗑️ Reiniciar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container-fluid px-md-5 pb-5">
+    <div class="row">
+      <!-- COLUMNA IZQUIERDA: Fase de Grupos -->
+      <div class="col-xl-8 col-lg-7 col-12 mb-4">
+        <h2 class="mb-4 d-flex align-items-center gap-2">
+          <span class="text-success">⚽</span> Fase de Grupos <span class="fs-6 text-secondary">(Hacé clic en cualquier partido para cargar los goles)</span>
+        </h2>
+        
+        <div class="row row-cols-md-2 row-cols-1 g-4">
+          <% Object.keys(standings).forEach(groupName => { %>
+            <div class="col">
+              <div class="group-card">
+                <!-- Encabezado del grupo -->
+                <div class="group-header-bg p-3">
+                  Grupo <%= groupName %>
+                </div>
+                
+                <!-- Tabla de posiciones -->
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center">Pos</th>
+                        <th>Selección</th>
+                        <th class="text-center">PJ</th>
+                        <th class="text-center">DG</th>
+                        <th class="text-center">Pts</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% standings[groupName].forEach((team, idx) => { 
+                        // Colorear bordes de clasificación: 1° y 2° verde, 3° amarillo
+                        let borderClass = '';
+                        if (idx < 2) borderClass = 'qualify-direct';
+                        else if (idx === 2) borderClass = 'qualify-third';
+                      %>
+                        <tr class="<%= borderClass %>">
+                          <td class="text-center pos-col"><%= idx + 1 %></td>
+                          <td>
+                            <img src="/flags/<%= team.flag_file %>" alt="<%= team.name %>" class="flag-img me-2">
+                            <span><%= team.name %></span>
+                          </td>
+                          <td class="text-center text-secondary"><%= team.played %></td>
+                          <td class="text-center text-secondary font-monospace"><%= (team.gd > 0 ? '+' : '') + team.gd %></td>
+                          <td class="text-center pts-col"><%= team.points %></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Partidos del grupo -->
+                <div class="matches-list p-2">
+                  <% if (matchesByGroup[groupName]) { %>
+                    <% matchesByGroup[groupName].forEach(match => { %>
+                      <div class="match-item d-flex justify-content-between align-items-center" 
+                           style="cursor: pointer;"
+                           onclick="openEditModal(<%= match.id %>, '<%= match.home_name %>', '<%= match.home_flag %>', <%= match.home_score %>, '<%= match.away_name %>', '<%= match.away_flag %>', <%= match.away_score %>, '<%= match.status %>')">
+                        <div class="d-flex align-items-center gap-1 w-40 justify-content-end text-end">
+                          <span class="small text-truncate d-none d-sm-inline"><%= match.home_name %></span>
+                          <span class="small d-inline d-sm-none"><%= match.home_name.substring(0, 3).toUpperCase() %></span>
+                          <img src="/flags/<%= match.home_flag %>" alt="" class="flag-img">
+                        </div>
+                        
+                        <div class="text-center w-20">
+                          <% if (match.status === 'finished') { %>
+                            <span class="match-score"><%= match.home_score %> - <%= match.away_score %></span>
+                          <% } else { %>
+                            <span class="match-score pending">vs</span>
+                          <% } %>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-1 w-40 text-start">
+                          <img src="/flags/<%= match.away_flag %>" alt="" class="flag-img">
+                          <span class="small text-truncate d-none d-sm-inline"><%= match.away_name %></span>
+                          <span class="small d-inline d-sm-none"><%= match.away_name.substring(0, 3).toUpperCase() %></span>
+                        </div>
+                      </div>
+                    <% }) %>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: Fase Eliminatoria -->
+      <div class="col-xl-4 col-lg-5 col-12">
+        <h2 class="mb-4 d-flex align-items-center gap-2">
+          <span class="text-warning">🏆</span> Fase Eliminatoria
+        </h2>
+
+        <!-- Llave Final y Campeón (Arriba para destacar) -->
+        <div class="mb-4">
+          <div class="playoff-stage-title">👑 Gran Final</div>
+          <% const finalMatch = playoffsByStage.final[0]; %>
+          <% if (finalMatch) { %>
+            <div class="playoff-card border border-warning"
+                 <% if (finalMatch.home_team_id && finalMatch.away_team_id) { %>
+                 style="cursor: pointer;"
+                 onclick="openEditModal(<%= finalMatch.id %>, '<%= finalMatch.home_name %>', '<%= finalMatch.home_flag %>', <%= finalMatch.home_score %>, '<%= finalMatch.away_name %>', '<%= finalMatch.away_flag %>', <%= finalMatch.away_score %>, '<%= finalMatch.status %>')"
+                 <% } %>>
+              <div class="playoff-match-num">
+                <span>Partido 104 - FINAL</span>
+                <span class="text-warning">MUNDIAL 2026</span>
+              </div>
+              
+              <!-- Equipo Local -->
+              <div class="playoff-team <%= (finalMatch.status === 'finished' && finalMatch.home_score > finalMatch.away_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (finalMatch.home_team_id) { %>
+                    <img src="/flags/<%= finalMatch.home_flag %>" alt="" class="flag-img me-2">
+                    <span><%= finalMatch.home_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= finalMatch.placeholder_home %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= finalMatch.status === 'pending' ? 'pending' : '' %>">
+                  <%= finalMatch.status === 'finished' ? finalMatch.home_score : '-' %>
+                </div>
+              </div>
+              
+              <!-- Equipo Visitante -->
+              <div class="playoff-team <%= (finalMatch.status === 'finished' && finalMatch.away_score > finalMatch.home_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (finalMatch.away_team_id) { %>
+                    <img src="/flags/<%= finalMatch.away_flag %>" alt="" class="flag-img me-2">
+                    <span><%= finalMatch.away_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= finalMatch.placeholder_away %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= finalMatch.status === 'pending' ? 'pending' : '' %>">
+                  <%= finalMatch.status === 'finished' ? finalMatch.away_score : '-' %>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recuadro del Campeón consagrado -->
+            <% if (finalMatch.status === 'finished') { 
+              const championName = finalMatch.home_score > finalMatch.away_score ? finalMatch.home_name : finalMatch.away_name;
+              const championFlag = finalMatch.home_score > finalMatch.away_score ? finalMatch.home_flag : finalMatch.away_flag;
+            %>
+              <div class="champion-box mt-3">
+                <span class="fs-1">🏆</span>
+                <div class="champion-title mt-1">¡Campeón Mundial!</div>
+                <div class="d-flex align-items-center justify-content-center gap-2 mt-2">
+                  <img src="/flags/<%= championFlag %>" alt="<%= championName %>" class="flag-img" style="width: 45px; height: 30px;">
+                  <span class="fs-4 fw-bold text-white"><%= championName %></span>
+                </div>
+              </div>
+            <% } %>
+          <% } %>
+        </div>
+
+        <!-- Tercer Puesto -->
+        <div class="mb-4">
+          <div class="playoff-stage-title">🥉 Tercer Puesto</div>
+          <% const thirdPlace = playoffsByStage.third_place[0]; %>
+          <% if (thirdPlace) { %>
+            <div class="playoff-card"
+                 <% if (thirdPlace.home_team_id && thirdPlace.away_team_id) { %>
+                 style="cursor: pointer;"
+                 onclick="openEditModal(<%= thirdPlace.id %>, '<%= thirdPlace.home_name %>', '<%= thirdPlace.home_flag %>', <%= thirdPlace.home_score %>, '<%= thirdPlace.away_name %>', '<%= thirdPlace.away_flag %>', <%= thirdPlace.away_score %>, '<%= thirdPlace.status %>')"
+                 <% } %>>
+              <div class="playoff-match-num">
+                <span>Partido 103</span>
+              </div>
+              <div class="playoff-team <%= (thirdPlace.status === 'finished' && thirdPlace.home_score > thirdPlace.away_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (thirdPlace.home_team_id) { %>
+                    <img src="/flags/<%= thirdPlace.home_flag %>" alt="" class="flag-img me-2">
+                    <span><%= thirdPlace.home_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= thirdPlace.placeholder_home %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= thirdPlace.status === 'pending' ? 'pending' : '' %>">
+                  <%= thirdPlace.status === 'finished' ? thirdPlace.home_score : '-' %>
+                </div>
+              </div>
+              <div class="playoff-team <%= (thirdPlace.status === 'finished' && thirdPlace.away_score > thirdPlace.home_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (thirdPlace.away_team_id) { %>
+                    <img src="/flags/<%= thirdPlace.away_flag %>" alt="" class="flag-img me-2">
+                    <span><%= thirdPlace.away_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= thirdPlace.placeholder_away %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= thirdPlace.status === 'pending' ? 'pending' : '' %>">
+                  <%= thirdPlace.status === 'finished' ? thirdPlace.away_score : '-' %>
+                </div>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Semifinales -->
+        <div class="mb-4">
+          <div class="playoff-stage-title">🏁 Semifinales</div>
+          <% playoffsByStage.semis.forEach(match => { %>
+            <div class="playoff-card"
+                 <% if (match.home_team_id && match.away_team_id) { %>
+                 style="cursor: pointer;"
+                 onclick="openEditModal(<%= match.id %>, '<%= match.home_name %>', '<%= match.home_flag %>', <%= match.home_score %>, '<%= match.away_name %>', '<%= match.away_flag %>', <%= match.away_score %>, '<%= match.status %>')"
+                 <% } %>>
+              <div class="playoff-match-num">
+                <span>Partido <%= match.match_number %></span>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.home_score > match.away_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.home_team_id) { %>
+                    <img src="/flags/<%= match.home_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.home_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_home %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.home_score : '-' %>
+                </div>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.away_score > match.home_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.away_team_id) { %>
+                    <img src="/flags/<%= match.away_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.away_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_away %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.away_score : '-' %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <!-- Cuartos de Final -->
+        <div class="mb-4">
+          <div class="playoff-stage-title">⚡ Cuartos de Final</div>
+          <% playoffsByStage.quarters.forEach(match => { %>
+            <div class="playoff-card"
+                 <% if (match.home_team_id && match.away_team_id) { %>
+                 style="cursor: pointer;"
+                 onclick="openEditModal(<%= match.id %>, '<%= match.home_name %>', '<%= match.home_flag %>', <%= match.home_score %>, '<%= match.away_name %>', '<%= match.away_flag %>', <%= match.away_score %>, '<%= match.status %>')"
+                 <% } %>>
+              <div class="playoff-match-num">
+                <span>Partido <%= match.match_number %></span>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.home_score > match.away_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.home_team_id) { %>
+                    <img src="/flags/<%= match.home_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.home_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_home %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.home_score : '-' %>
+                </div>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.away_score > match.home_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.away_team_id) { %>
+                    <img src="/flags/<%= match.away_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.away_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_away %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.away_score : '-' %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <!-- Octavos de Final -->
+        <div class="mb-4">
+          <div class="playoff-stage-title">🛡️ Octavos de Final</div>
+          <% playoffsByStage.round_of_16.forEach(match => { %>
+            <div class="playoff-card"
+                 <% if (match.home_team_id && match.away_team_id) { %>
+                 style="cursor: pointer;"
+                 onclick="openEditModal(<%= match.id %>, '<%= match.home_name %>', '<%= match.home_flag %>', <%= match.home_score %>, '<%= match.away_name %>', '<%= match.away_flag %>', <%= match.away_score %>, '<%= match.status %>')"
+                 <% } %>>
+              <div class="playoff-match-num">
+                <span>Partido <%= match.match_number %></span>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.home_score > match.away_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.home_team_id) { %>
+                    <img src="/flags/<%= match.home_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.home_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_home %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.home_score : '-' %>
+                </div>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.away_score > match.home_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.away_team_id) { %>
+                    <img src="/flags/<%= match.away_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.away_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_away %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.away_score : '-' %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <!-- 16avos de Final -->
+        <div class="mb-4">
+          <div class="playoff-stage-title">💥 16avos de Final</div>
+          <% playoffsByStage.round_of_32.forEach(match => { %>
+            <div class="playoff-card"
+                 <% if (match.home_team_id && match.away_team_id) { %>
+                 style="cursor: pointer;"
+                 onclick="openEditModal(<%= match.id %>, '<%= match.home_name %>', '<%= match.home_flag %>', <%= match.home_score %>, '<%= match.away_name %>', '<%= match.away_flag %>', <%= match.away_score %>, '<%= match.status %>')"
+                 <% } %>>
+              <div class="playoff-match-num">
+                <span>Partido <%= match.match_number %></span>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.home_score > match.away_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.home_team_id) { %>
+                    <img src="/flags/<%= match.home_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.home_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_home %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.home_score : '-' %>
+                </div>
+              </div>
+              <div class="playoff-team <%= (match.status === 'finished' && match.away_score > match.home_score) ? 'playoff-team-winner' : '' %>">
+                <div>
+                  <% if (match.away_team_id) { %>
+                    <img src="/flags/<%= match.away_flag %>" alt="" class="flag-img me-2">
+                    <span><%= match.away_name %></span>
+                  <% } else { %>
+                    <span class="text-secondary italic"><%= match.placeholder_away %></span>
+                  <% } %>
+                </div>
+                <div class="playoff-score <%= match.status === 'pending' ? 'pending' : '' %>">
+                  <%= match.status === 'finished' ? match.away_score : '-' %>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal para Editar Partido -->
+  <div class="modal fade" id="editMatchModal" tabindex="-1" aria-labelledby="editMatchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background-color: #111827; border: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+          <h5 class="modal-title" id="editMatchModalLabel">📝 Cargar Goles del Partido</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form action="/matches/update" method="POST">
+          <div class="modal-body">
+            <input type="hidden" name="match_id" id="modal-match-id">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <!-- Local -->
+              <div class="text-center flex-fill">
+                <img id="modal-home-flag" src="" alt="" class="flag-img mb-2" style="width: 50px; height: 32px;">
+                <div id="modal-home-name" class="fw-bold text-white small"></div>
+                <input type="number" name="home_score" id="modal-home-score" class="form-control text-center mx-auto mt-2" style="width: 70px; font-weight: 800; font-size: 1.25rem;" min="0">
+              </div>
+              
+              <div class="fs-4 text-secondary px-3">vs</div>
+              
+              <!-- Visitante -->
+              <div class="text-center flex-fill">
+                <img id="modal-away-flag" src="" alt="" class="flag-img mb-2" style="width: 50px; height: 32px;">
+                <div id="modal-away-name" class="fw-bold text-white small"></div>
+                <input type="number" name="away_score" id="modal-away-score" class="form-control text-center mx-auto mt-2" style="width: 70px; font-weight: 800; font-size: 1.25rem;" min="0">
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="modal-status" class="form-label text-secondary small">Estado del Partido</label>
+              <select name="status" id="modal-status" class="form-select">
+                <option value="finished">Finalizado</option>
+                <option value="pending">Pendiente (Sin goles)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success">Guardar Resultado</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5.3 JS Bundle con Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script interactivo en el Cliente -->
+  <script>
+    function showLoading() {
+      document.getElementById('spinner-overlay').classList.add('show');
+    }
+
+    function openEditModal(matchId, homeName, homeFlag, homeScore, awayName, awayFlag, awayScore, status) {
+      document.getElementById('modal-match-id').value = matchId;
+      document.getElementById('modal-home-name').innerText = homeName;
+      document.getElementById('modal-home-flag').src = '/flags/' + homeFlag;
+      document.getElementById('modal-home-score').value = status === 'finished' ? homeScore : '';
+      
+      document.getElementById('modal-away-name').innerText = awayName;
+      document.getElementById('modal-away-flag').src = '/flags/' + awayFlag;
+      document.getElementById('modal-away-score').value = status === 'finished' ? awayScore : '';
+      
+      document.getElementById('modal-status').value = status;
+      
+      const statusSelect = document.getElementById('modal-status');
+      const homeInput = document.getElementById('modal-home-score');
+      const awayInput = document.getElementById('modal-away-score');
+      
+      statusSelect.onchange = function() {
+        if (this.value === 'pending') {
+          homeInput.value = '';
+          awayInput.value = '';
+          homeInput.disabled = true;
+          awayInput.disabled = true;
+        } else {
+          homeInput.disabled = false;
+          awayInput.disabled = false;
+        }
+      };
+      
+      statusSelect.onchange(); // Evaluar estado inicial
+      
+      const modal = new bootstrap.Modal(document.getElementById('editMatchModal'));
+      modal.show();
+    }
+  </script>
+</body>
+</html>

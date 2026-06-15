@@ -1,0 +1,290 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+:root {
+  --soccer-green: #0d2c1d;
+  --soccer-glow: #1b8a5a;
+  --gold-glow: #ffd700;
+  --dark-bg: #0b0f19;
+  --card-bg: rgba(22, 28, 45, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--dark-bg);
+  background-image: 
+    radial-gradient(at 10% 20%, rgba(27, 138, 90, 0.15) 0px, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(13, 44, 29, 0.3) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: #f3f4f6;
+  min-height: 100vh;
+}
+
+/* Header premium */
+.hero-header {
+  background: linear-gradient(135deg, rgba(13, 44, 29, 0.9) 0%, rgba(11, 15, 25, 0.95) 100%);
+  border-bottom: 2px solid var(--soccer-glow);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+}
+
+.title-gradient {
+  background: linear-gradient(to right, #ffffff, #a3e635, #22c55e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+/* Tarjetas de grupo (Glassmorphism) */
+.group-card {
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.group-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(27, 138, 90, 0.4);
+  box-shadow: 0 12px 30px rgba(27, 138, 90, 0.15);
+}
+
+.group-header-bg {
+  background: linear-gradient(90deg, rgba(27, 138, 90, 0.3) 0%, rgba(13, 44, 29, 0) 100%);
+  border-bottom: 1px solid var(--glass-border);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+/* Banderas premium */
+.flag-img {
+  width: 28px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: middle;
+}
+
+/* Tablas estilizadas */
+.table {
+  color: #e5e7eb;
+  margin-bottom: 0;
+}
+
+.table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #9ca3af;
+  border-bottom-width: 1px;
+  border-color: var(--glass-border);
+}
+
+.table td {
+  border-color: rgba(255, 255, 255, 0.04);
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.pos-col {
+  width: 30px;
+  font-weight: 600;
+  color: var(--soccer-glow);
+}
+
+.pts-col {
+  font-weight: 800;
+  color: #a3e635;
+}
+
+.qualify-direct {
+  border-left: 3px solid #22c55e !important;
+}
+
+.qualify-third {
+  border-left: 3px solid #eab308 !important;
+}
+
+/* Partidos dentro del grupo */
+.matches-list {
+  background: rgba(11, 15, 25, 0.4);
+  border-radius: 0 0 16px 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.match-item {
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.match-item:last-child {
+  border-bottom: none;
+}
+
+.match-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.match-score {
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.match-score.pending {
+  font-weight: 400;
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Llave eliminatoria (Play-offs) */
+.playoff-stage-title {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #a3e635;
+  border-bottom: 2px solid var(--soccer-glow);
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+}
+
+.playoff-card {
+  background: rgba(22, 28, 45, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  margin-bottom: 12px;
+  transition: border-color 0.3s;
+}
+
+.playoff-card:hover {
+  border-color: var(--soccer-glow);
+}
+
+.playoff-match-num {
+  font-size: 0.7rem;
+  color: #6b7280;
+  padding: 4px 10px;
+  background: rgba(0,0,0,0.2);
+  border-bottom: 1px solid var(--glass-border);
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.playoff-team {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+}
+
+.playoff-team:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.playoff-team-winner {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.playoff-score {
+  font-weight: 800;
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: #a3e635;
+}
+
+.playoff-score.pending {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Campeón box */
+.champion-box {
+  background: linear-gradient(135deg, rgba(253, 224, 71, 0.15) 0%, rgba(234, 179, 8, 0.05) 100%);
+  border: 2px dashed #facc15;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(250, 204, 21, 0.1);
+  animation: pulse-gold 3s infinite alternate;
+}
+
+@keyframes pulse-gold {
+  0% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.1); }
+  100% { box-shadow: 0 0 35px rgba(250, 204, 21, 0.25); }
+}
+
+.champion-title {
+  color: #facc15;
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Botones Premium */
+.btn-sync {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+  transition: all 0.3s;
+}
+
+.btn-sync:hover {
+  background: linear-gradient(135deg, #4ade80 0%, #15803d 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.45);
+}
+
+.btn-reset-custom {
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-reset-custom:hover {
+  background: #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+}
+
+/* Indicador de carga */
+#spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(11, 15, 25, 0.85);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#spinner-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
