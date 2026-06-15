@@ -14,3 +14,5 @@ db/fixture.db-journal
 # Private files
 GEMINI.md
 .gemini/
+ssl/
+

@@ -11,13 +11,14 @@ Aplicación web interactiva desarrollada con **Node.js**, **Express**, **EJS** y
 - 📊 **Cálculo de Posiciones Oficial:** Sistema dinámico que calcula los puntos (3 por ganar, 1 por empatar), la diferencia de gol y los goles a favor de forma idéntica al reglamento de la FIFA.
 - 🎨 **Estilo Premium Oscuro:** Interfaz optimizada con Bootstrap 5.3 oscuro y hojas de estilo a medida.
 - 🏁 **Mapeo de Banderas Oficiales:** Visualización de las banderas locales de todas las selecciones participantes.
-- 🐳 **Soporte para Docker:** Listo para levantar con un solo comando en contenedores persistiendo la base de datos de SQLite.
+- 🔒 **Conexión HTTPS Segura:** Soporte nativo para HTTPS mediante certificados locales ubicados en `./ssl` (`apache.crt` y `apache.key`).
+- 🐳 **Soporte para Docker:** Listo para levantar con un solo comando en contenedores persistiendo la base de datos y cargando certificados SSL de forma segura.
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **Servidor:** Node.js, Express.js
+- **Servidor:** Node.js, Express.js (HTTP / HTTPS)
 - **Motor de Plantillas:** EJS (Embedded JavaScript)
 - **Base de Datos:** SQLite con el paquete síncrono `better-sqlite3`
 - **Peticiones HTTP:** Axios
@@ -41,18 +42,21 @@ Aplicación web interactiva desarrollada con **Node.js**, **Express**, **EJS** y
    node db/init.js
    ```
 
-3. **Iniciar en desarrollo:**
+3. **Configurar certificados (Opcional):**
+   Ubicá tus certificados SSL en una carpeta `./ssl` en la raíz con los nombres `apache.key` y `apache.crt` si deseás usar HTTPS.
+
+4. **Iniciar en desarrollo:**
    Correr la aplicación con nodemon para cambios en tiempo real:
    ```bash
    npm run dev
    ```
 
-4. **Acceder a la aplicación:**
-   Abrir en el navegador: **http://localhost:3000**
+5. **Acceder a la aplicación:**
+   Abrir en el navegador: **https://localhost:3000** (o **http://localhost:3000** si no usás certificados).
 
 ---
 
-### Opción 2: Ejecución con Docker (Recomendado para producción)
+### Opción 2: Ejecución con Docker (Recomendado)
 
 La aplicación está contenerizada con soporte de persistencia de datos (volumen Docker para la base de datos de SQLite) y control inteligente de arranque:
 
@@ -62,7 +66,7 @@ La aplicación está contenerizada con soporte de persistencia de datos (volumen
    ```
 
 2. **Acceder a la aplicación:**
-   Abrir en el navegador: **http://localhost:3000**
+   Abrir en el navegador: **https://localhost:3000** (los certificados de `./ssl` se montan automáticamente en modo lectura).
 
 3. **Detener el contenedor:**
    ```bash

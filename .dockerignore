@@ -7,3 +7,5 @@ db/fixture.db*
 .git/
 .gemini/
 GEMINI.md
+ssl/
+

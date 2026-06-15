@@ -1,15 +1,18 @@
 services:
   web:
     build: .
-    container_name: fixture_app
+    container_name: fixture_mundial_2026
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
       - NODE_ENV=production
       - DB_PATH=/app/data/fixture.db
+      - SSL_KEY_PATH=/app/ssl/apache.key
+      - SSL_CERT_PATH=/app/ssl/apache.crt
     volumes:
       - fixture_data:/app/data
+      - ./ssl:/app/ssl:ro
     restart: unless-stopped
 
 volumes:
