@@ -1,0 +1,9 @@
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+db/fixture.db*
+.env
+.git/
+.gemini/
+GEMINI.md
