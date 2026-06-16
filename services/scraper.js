@@ -2,7 +2,7 @@ const axios = require('axios');
 const db = require('../db/connection');
 const fixtureService = require('./fixtureService');
 
-// Mapeo de nombres comunes de países (de inglés/ESPN a los nombres en nuestra base de datos)
+// Mapeo completo de nombres en inglés normalizados de la API de ESPN a español de Argentina
 const countryNameMapping = {
   'united states': 'Estados Unidos',
   'usa': 'Estados Unidos',
@@ -52,15 +52,38 @@ const countryNameMapping = {
   'turkiye': 'Turquía',
   'ivory coast': 'Costa de Marfil',
   'cote d\'ivoire': 'Costa de Marfil',
+  'cote divoire': 'Costa de Marfil',
   'austria': 'Austria',
   'venezuela': 'Venezuela',
-  'norway': 'Noruega'
+  'norway': 'Noruega',
+  'south africa': 'Sudáfrica',
+  'czechia': 'República Checa',
+  'czech republic': 'República Checa',
+  'bosnia-herzegovina': 'Bosnia-Herzegovina',
+  'qatar': 'Catar',
+  'haiti': 'Haití',
+  'curacao': 'Curazao',
+  'new zealand': 'Nueva Zelanda',
+  'cape verde': 'Cabo Verde',
+  'iraq': 'Irak',
+  'jordan': 'Jordania',
+  'congo dr': 'Congo RD',
+  'dr congo': 'Congo RD',
+  'democratic republic of congo': 'Congo RD',
+  'uzbekistan': 'Uzbekistán',
+  'panama': 'Panamá'
 };
 
-// Normalizar nombres de países
+// Normalizar nombres de países removiendo diacríticos y buscando en el mapeo
 function normalizeCountryName(name) {
   if (!name) return '';
-  const cleanName = name.toLowerCase().trim().replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ñ/g, 'n');
+  
+  // Normalización Unicode robusta (elimina acentos, diéresis, etc.)
+  const cleanName = name.toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ñ/g, 'n');
   
   if (countryNameMapping[cleanName]) {
     return countryNameMapping[cleanName];

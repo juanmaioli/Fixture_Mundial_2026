@@ -6,7 +6,7 @@ Aplicación web interactiva desarrollada con **Node.js**, **Express**, **EJS** y
 
 ## 🚀 Características Principales
 
-- 🌐 **Sincronización en Vivo:** Conexión directa con la API de Scoreboard de ESPN para descargar los resultados reales del torneo.
+- 🌐 **Sincronización en Vivo:** Conexión directa con la API de Scoreboard de ESPN. Cuenta con un sistema de traducción y normalización Unicode nativa de diacríticos para garantizar la coincidencia y actualización precisa de todas las selecciones participantes.
 - ✏️ **Carga Manual de Goles:** Interfaz interactiva de edición rápida mediante un modal para ingresar resultados de forma manual.
 - 📊 **Cálculo de Posiciones Oficial:** Sistema dinámico que calcula los puntos (3 por ganar, 1 por empatar), la diferencia de gol y los goles a favor de forma idéntica al reglamento de la FIFA.
 - 🎨 **Estilo Premium Oscuro:** Interfaz optimizada con Bootstrap 5.3 oscuro y hojas de estilo a medida.
@@ -72,3 +72,12 @@ La aplicación está contenerizada con soporte de persistencia de datos (volumen
    ```bash
    docker compose down
    ```
+
+---
+
+## 📜 Historial de Cambios Recientes
+
+### v1.3.1
+- 🐛 **Corrección en package.json:** Se actualizó el punto de entrada principal (`main`) a `server.js` solucionando fallos al iniciar la aplicación con `nodemon`.
+- 🐛 **Soporte de traducción y diacríticos:** Se completaron las traducciones de selecciones en inglés a español en el scraper y se implementó una normalización Unicode robusta para caracteres especiales (`ü`, `ç`, tildes), logrando que partidos como los de España, Alemania, Corea del Sur y México se sincronicen correctamente.
+
