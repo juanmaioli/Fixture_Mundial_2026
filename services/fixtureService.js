@@ -93,80 +93,177 @@ function updatePlayoffBracket() {
     return count === 6;
   }).length;
 
-  // Si todos los grupos de la fase de grupos terminaron (12 grupos)
-  if (finishedGroupsCount === 12) {
-    const firsts = [];
-    const seconds = [];
-    const thirds = [];
+  const updateHomeTeam = (matchNum, team) => {
+    db.prepare(`
+      UPDATE matches 
+      SET home_team_id = ? 
+      WHERE match_number = ?
+    `).run(team ? team.id : null, matchNum);
+  };
 
+  const updateAwayTeam = (matchNum, team) => {
+    db.prepare(`
+      UPDATE matches 
+      SET away_team_id = ? 
+      WHERE match_number = ?
+    `).run(team ? team.id : null, matchNum);
+  };
+
+  db.transaction(() => {
+    // 1. Procesar grupos finalizados individualmente
     for (const g of Object.keys(standings)) {
-      const list = standings[g];
-      firsts.push({ group: g, team: list[0] });
-      seconds.push({ group: g, team: list[1] });
-      thirds.push({ group: g, team: list[2] });
+      const isGroupFinished = db.prepare(`
+        SELECT COUNT(*) as count FROM matches 
+        WHERE stage = 'groups' AND group_name = ? AND status = 'finished'
+      `).get(g).count === 6;
+
+      if (isGroupFinished) {
+        const first = standings[g][0];
+        const second = standings[g][1];
+
+        switch (g) {
+          case 'A':
+            updateHomeTeam(73, first);
+            updateHomeTeam(74, second);
+            break;
+          case 'B':
+            updateHomeTeam(75, first);
+            updateAwayTeam(74, second);
+            break;
+          case 'C':
+            updateHomeTeam(77, first);
+            updateHomeTeam(76, second);
+            break;
+          case 'D':
+            updateHomeTeam(78, first);
+            updateAwayTeam(76, second);
+            break;
+          case 'E':
+            updateHomeTeam(79, first);
+            updateAwayTeam(80, second);
+            break;
+          case 'F':
+            updateHomeTeam(80, first);
+            updateAwayTeam(79, second);
+            break;
+          case 'G':
+            updateHomeTeam(81, first);
+            updateHomeTeam(82, second);
+            break;
+          case 'H':
+            updateHomeTeam(83, first);
+            updateAwayTeam(82, second);
+            break;
+          case 'I':
+            updateHomeTeam(85, first);
+            updateHomeTeam(84, second);
+            break;
+          case 'J':
+            updateHomeTeam(86, first);
+            updateAwayTeam(84, second);
+            break;
+          case 'K':
+            updateHomeTeam(87, first);
+            updateAwayTeam(88, second);
+            break;
+          case 'L':
+            updateHomeTeam(88, first);
+            updateAwayTeam(87, second);
+            break;
+        }
+      } else {
+        // Si el grupo no está finalizado, nos aseguramos de vaciar sus placeholders
+        switch (g) {
+          case 'A':
+            updateHomeTeam(73, null);
+            updateHomeTeam(74, null);
+            break;
+          case 'B':
+            updateHomeTeam(75, null);
+            updateAwayTeam(74, null);
+            break;
+          case 'C':
+            updateHomeTeam(77, null);
+            updateHomeTeam(76, null);
+            break;
+          case 'D':
+            updateHomeTeam(78, null);
+            updateAwayTeam(76, null);
+            break;
+          case 'E':
+            updateHomeTeam(79, null);
+            updateAwayTeam(80, null);
+            break;
+          case 'F':
+            updateHomeTeam(80, null);
+            updateAwayTeam(79, null);
+            break;
+          case 'G':
+            updateHomeTeam(81, null);
+            updateHomeTeam(82, null);
+            break;
+          case 'H':
+            updateHomeTeam(83, null);
+            updateAwayTeam(82, null);
+            break;
+          case 'I':
+            updateHomeTeam(85, null);
+            updateHomeTeam(84, null);
+            break;
+          case 'J':
+            updateHomeTeam(86, null);
+            updateAwayTeam(84, null);
+            break;
+          case 'K':
+            updateHomeTeam(87, null);
+            updateAwayTeam(88, null);
+            break;
+          case 'L':
+            updateHomeTeam(88, null);
+            updateAwayTeam(87, null);
+            break;
+        }
+      }
     }
 
-    // Ordenar los mejores terceros: puntos, dif gol, goles favor
-    thirds.sort((a, b) => {
-      if (b.team.points !== a.team.points) return b.team.points - a.team.points;
-      if (b.team.gd !== a.team.gd) return b.team.gd - a.team.gd;
-      if (b.team.gf !== a.team.gf) return b.team.gf - a.team.gf;
-      return a.team.name.localeCompare(b.team.name);
-    });
+    // 2. Si los 12 grupos están completos, calculamos y asignamos los mejores terceros
+    if (finishedGroupsCount === 12) {
+      const thirds = [];
+      for (const g of Object.keys(standings)) {
+        thirds.push({ group: g, team: standings[g][2] });
+      }
 
-    const bestThirds = thirds.slice(0, 8); // Tomamos los 8 mejores terceros
+      // Ordenar los mejores terceros: puntos, dif gol, goles favor
+      thirds.sort((a, b) => {
+        if (b.team.points !== a.team.points) return b.team.points - a.team.points;
+        if (b.team.gd !== a.team.gd) return b.team.gd - a.team.gd;
+        if (b.team.gf !== a.team.gf) return b.team.gf - a.team.gf;
+        return a.team.name.localeCompare(b.team.name);
+      });
 
-    // Asignación de 16avos de final
-    // Cruces definidos en db/init.js:
-    // match_number 73: 1A vs 3° C/D/E/F
-    // match_number 74: 2A vs 2B
-    // match_number 75: 1B vs 3° A/C/D/E
-    // match_number 76: 2C vs 2D
-    // match_number 77: 1C vs 3° A/B/E/F
-    // match_number 78: 1D vs 3° B/C/F/G
-    // match_number 79: 1E vs 2F
-    // match_number 80: 1F vs 2E
-    // match_number 81: 1G vs 3° H/I/J/K
-    // match_number 82: 2G vs 2H
-    // match_number 83: 1H vs 3° G/I/J/K
-    // match_number 84: 2I vs 2J
-    // match_number 85: 1I vs 3° G/H/K/L
-    // match_number 86: 1J vs 3° H/I/L/A
-    // match_number 87: 1K vs 2L
-    // match_number 88: 1L vs 2K
+      const bestThirds = thirds.slice(0, 8); // Tomamos los 8 mejores terceros
 
-    const getTeamByCode = (group, pos) => {
-      // pos: 0 = 1ro, 1 = 2do
-      return standings[group][pos];
-    };
-
-    // Mapear cruces
-    const updateMatchTeams = (matchNum, homeTeam, awayTeam) => {
-      db.prepare(`
-        UPDATE matches 
-        SET home_team_id = ?, away_team_id = ? 
-        WHERE match_number = ?
-      `).run(homeTeam.id, awayTeam.id, matchNum);
-    };
-
-    // Asignación de terceros usando los 8 clasificados ordenadamente
-    updateMatchTeams(73, getTeamByCode('A', 0), bestThirds[0].team);
-    updateMatchTeams(74, getTeamByCode('A', 1), getTeamByCode('B', 1));
-    updateMatchTeams(75, getTeamByCode('B', 0), bestThirds[1].team);
-    updateMatchTeams(76, getTeamByCode('C', 1), getTeamByCode('D', 1));
-    updateMatchTeams(77, getTeamByCode('C', 0), bestThirds[2].team);
-    updateMatchTeams(78, getTeamByCode('D', 0), bestThirds[3].team);
-    updateMatchTeams(79, getTeamByCode('E', 0), getTeamByCode('F', 1));
-    updateMatchTeams(80, getTeamByCode('F', 0), getTeamByCode('E', 1));
-    updateMatchTeams(81, getTeamByCode('G', 0), bestThirds[4].team);
-    updateMatchTeams(82, getTeamByCode('G', 1), getTeamByCode('H', 1));
-    updateMatchTeams(83, getTeamByCode('H', 0), bestThirds[5].team);
-    updateMatchTeams(84, getTeamByCode('I', 1), getTeamByCode('J', 1));
-    updateMatchTeams(85, getTeamByCode('I', 0), bestThirds[6].team);
-    updateMatchTeams(86, getTeamByCode('J', 0), bestThirds[7].team);
-    updateMatchTeams(87, getTeamByCode('K', 0), getTeamByCode('L', 1));
-    updateMatchTeams(88, getTeamByCode('L', 0), getTeamByCode('K', 1));
-  }
+      // Asignar los mejores terceros a las llaves correspondientes
+      updateAwayTeam(73, bestThirds[0].team);
+      updateAwayTeam(75, bestThirds[1].team);
+      updateAwayTeam(77, bestThirds[2].team);
+      updateAwayTeam(78, bestThirds[3].team);
+      updateAwayTeam(81, bestThirds[4].team);
+      updateAwayTeam(83, bestThirds[5].team);
+      updateAwayTeam(85, bestThirds[6].team);
+      updateAwayTeam(86, bestThirds[7].team);
+    } else {
+      // Si falta algún grupo, limpiamos los terceros
+      updateAwayTeam(73, null);
+      updateAwayTeam(75, null);
+      updateAwayTeam(77, null);
+      updateAwayTeam(78, null);
+      updateAwayTeam(81, null);
+      updateAwayTeam(83, null);
+      updateAwayTeam(85, null);
+      updateAwayTeam(86, null);
+    }
+  })();
 
   // Ahora procesar las rondas eliminatorias subsiguientes
   // Si los partidos de la ronda de 32 están finalizados, avanzamos a octavos de final (match_numbers 89 a 96)

@@ -8,7 +8,7 @@ Aplicación web interactiva desarrollada con **Node.js**, **Express**, **EJS** y
 
 - 🌐 **Sincronización en Vivo:** Conexión directa con la API de Scoreboard de ESPN. Cuenta con un sistema de traducción y normalización Unicode nativa de diacríticos para garantizar la coincidencia y actualización precisa de todas las selecciones participantes.
 - ✏️ **Carga Manual de Goles:** Interfaz interactiva de edición rápida mediante un modal para ingresar resultados de forma manual.
-- 📊 **Cálculo de Posiciones Oficial:** Sistema dinámico que calcula los puntos (3 por ganar, 1 por empatar), la diferencia de gol y los goles a favor de forma idéntica al reglamento de la FIFA.
+- 📊 **Cálculo de Posiciones y Play-offs:** Sistema dinámico que calcula las tablas de posiciones e inicia de manera progresiva los cruces de 16avos de final a medida que culmina cada grupo individual, resolviendo al instante los emparejamientos directos.
 - 🎨 **Estilo Premium Oscuro:** Interfaz optimizada con Bootstrap 5.3 oscuro y hojas de estilo a medida.
 - 🏁 **Mapeo de Banderas Oficiales:** Visualización de las banderas locales de todas las selecciones participantes.
 - 🔒 **Conexión HTTPS Segura:** Soporte nativo para HTTPS mediante certificados locales ubicados en `./ssl` (`apache.crt` y `apache.key`).
@@ -76,6 +76,9 @@ La aplicación está contenerizada con soporte de persistencia de datos (volumen
 ---
 
 ## 📜 Historial de Cambios Recientes
+
+### v1.4.0
+- 🚀 **Pre-llenado progresivo de play-offs:** Se modificó la lógica en el servicio de fixture para ubicar a las selecciones en la ronda de 16avos de final de forma incremental e inmediata apenas termina cada grupo, sin tener que esperar a que finalicen los 12 grupos. Los mejores terceros se siguen asignando al completarse la fase de grupos.
 
 ### v1.3.1
 - 🐛 **Corrección en package.json:** Se actualizó el punto de entrada principal (`main`) a `server.js` solucionando fallos al iniciar la aplicación con `nodemon`.
