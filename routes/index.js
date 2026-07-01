@@ -127,10 +127,10 @@ router.post('/reset', (req, res) => {
         SET home_score = NULL, away_score = NULL, status = 'pending'
       `).run();
 
-      // Limpiar clasificados de play-off (ponerlos a nulo)
+      // Limpiar clasificados de play-off (ponerlos a nulo y limpiar flag de API)
       db.prepare(`
         UPDATE matches 
-        SET home_team_id = NULL, away_team_id = NULL 
+        SET home_team_id = NULL, away_team_id = NULL, date = NULL 
         WHERE stage != 'groups'
       `).run();
     })();

@@ -94,19 +94,25 @@ function updatePlayoffBracket() {
   }).length;
 
   const updateHomeTeam = (matchNum, team) => {
-    db.prepare(`
-      UPDATE matches 
-      SET home_team_id = ? 
-      WHERE match_number = ?
-    `).run(team ? team.id : null, matchNum);
+    const match = db.prepare("SELECT status, date FROM matches WHERE match_number = ?").get(matchNum);
+    if (match && match.status !== 'finished' && match.date !== 'api') {
+      db.prepare(`
+        UPDATE matches 
+        SET home_team_id = ? 
+        WHERE match_number = ?
+      `).run(team ? team.id : null, matchNum);
+    }
   };
 
   const updateAwayTeam = (matchNum, team) => {
-    db.prepare(`
-      UPDATE matches 
-      SET away_team_id = ? 
-      WHERE match_number = ?
-    `).run(team ? team.id : null, matchNum);
+    const match = db.prepare("SELECT status, date FROM matches WHERE match_number = ?").get(matchNum);
+    if (match && match.status !== 'finished' && match.date !== 'api') {
+      db.prepare(`
+        UPDATE matches 
+        SET away_team_id = ? 
+        WHERE match_number = ?
+      `).run(team ? team.id : null, matchNum);
+    }
   };
 
   db.transaction(() => {
@@ -285,14 +291,19 @@ function processNextStage(currentStage, nextStage, currentStartMatchNum, nextSta
 
     if (m1 && m2) {
       const nextMatchNum = nextStartMatchNum + Math.floor(i / 2);
-      const winner1Id = getMatchWinner(m1);
-      const winner2Id = getMatchWinner(m2);
+      
+      // Solo actualizar si el partido de destino no está finalizado
+      const nextMatch = db.prepare("SELECT status FROM matches WHERE match_number = ?").get(nextMatchNum);
+      if (nextMatch && nextMatch.status !== 'finished') {
+        const winner1Id = getMatchWinner(m1);
+        const winner2Id = getMatchWinner(m2);
 
-      db.prepare(`
-        UPDATE matches 
-        SET home_team_id = ?, away_team_id = ? 
-        WHERE match_number = ?
-      `).run(winner1Id, winner2Id, nextMatchNum);
+        db.prepare(`
+          UPDATE matches 
+          SET home_team_id = ?, away_team_id = ? 
+          WHERE match_number = ?
+        `).run(winner1Id, winner2Id, nextMatchNum);
+      }
     }
   }
 }
@@ -308,14 +319,20 @@ function processNextStageSemisAndFinals() {
     const loser2 = getMatchLoser(semi2);
 
     // Final (104)
-    db.prepare(`
-      UPDATE matches SET home_team_id = ?, away_team_id = ? WHERE match_number = 104
-    `).run(winner1, winner2);
+    const finalMatch = db.prepare('SELECT status FROM matches WHERE match_number = 104').get();
+    if (finalMatch && finalMatch.status !== 'finished') {
+      db.prepare(`
+        UPDATE matches SET home_team_id = ?, away_team_id = ? WHERE match_number = 104
+      `).run(winner1, winner2);
+    }
 
     // Tercer puesto (103)
-    db.prepare(`
-      UPDATE matches SET home_team_id = ?, away_team_id = ? WHERE match_number = 103
-    `).run(loser1, loser2);
+    const thirdMatch = db.prepare('SELECT status FROM matches WHERE match_number = 103').get();
+    if (thirdMatch && thirdMatch.status !== 'finished') {
+      db.prepare(`
+        UPDATE matches SET home_team_id = ?, away_team_id = ? WHERE match_number = 103
+      `).run(loser1, loser2);
+    }
   }
 }
 
@@ -323,9 +340,8 @@ function getMatchWinner(match) {
   if (match.status !== 'finished') return null;
   if (match.home_score > match.away_score) return match.home_team_id;
   if (match.away_score > match.home_score) return match.away_team_id;
-  // En fase eliminatoria no hay empates, asumimos definición por penales y guardamos
-  // el ganador según un desempate simulado o la BD (por simplicidad, si es empate
-  // tomamos al local, pero en play-offs le daremos la victoria a uno si el scraper trae empate).
+  // En fase eliminatoria no hay empates. Como resguardo por si el
+  // scraper o la carga manual registra empate, se avanza al equipo local.
   return match.home_team_id;
 }
 

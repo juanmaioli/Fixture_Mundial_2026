@@ -92,6 +92,7 @@ function normalizeCountryName(name) {
 }
 
 // Función principal de sincronización con API JSON de ESPN
+// Función principal de sincronización con API JSON de ESPN
 async function syncFixture() {
   console.log('Iniciando sincronización de fixture con API de ESPN...');
   
@@ -119,33 +120,53 @@ async function syncFixture() {
         const competition = event.competitions && event.competitions[0];
         const status = event.status;
         
-        // Solo nos interesan partidos completados (finalizados)
-        if (competition && status && status.type && status.type.completed) {
+        if (competition && status && status.type) {
           const homeComp = competition.competitors.find(c => c.homeAway === 'home');
           const awayComp = competition.competitors.find(c => c.homeAway === 'away');
           
           if (homeComp && awayComp) {
             const homeName = normalizeCountryName(homeComp.team.displayName);
             const awayName = normalizeCountryName(awayComp.team.displayName);
-            const homeScore = parseInt(homeComp.score, 10);
-            const awayScore = parseInt(awayComp.score, 10);
-            
-            if (!isNaN(homeScore) && !isNaN(awayScore)) {
-              matchesScraped.push({
-                homeTeam: homeName,
-                awayTeam: awayName,
-                homeScore,
-                awayScore
-              });
+            const isCompleted = status.type.completed === true;
+
+            let homeScore = null;
+            let awayScore = null;
+
+            if (isCompleted) {
+              homeScore = parseInt(homeComp.score, 10);
+              awayScore = parseInt(awayComp.score, 10);
+              
+              if (!isNaN(homeScore) && !isNaN(awayScore)) {
+                // Si es un empate pero hay definición por penales en la API (winner: true)
+                // le sumamos 1 gol simbólico al ganador para romper el empate en nuestra BD local
+                if (homeScore === awayScore) {
+                  if (homeComp.winner === true) {
+                    homeScore += 1;
+                  } else if (awayComp.winner === true) {
+                    awayScore += 1;
+                  }
+                }
+              }
             }
+
+            const altGameNote = competition.altGameNote || '';
+
+            matchesScraped.push({
+              homeTeam: homeName,
+              awayTeam: awayName,
+              homeScore,
+              awayScore,
+              isCompleted,
+              altGameNote
+            });
           }
         }
       }
 
       if (matchesScraped.length > 0) {
-        console.log(`API Sincro: se encontraron ${matchesScraped.length} partidos finalizados en internet.`);
+        console.log(`API Sincro: se encontraron ${matchesScraped.length} partidos en internet.`);
         const updatedCount = updateMatchesFromScrapedData(matchesScraped);
-        console.log(`Se actualizaron ${updatedCount} partidos en la base de datos.`);
+        console.log(`Se actualizaron o alinearon ${updatedCount} partidos en la base de datos.`);
         if (updatedCount > 0) {
           syncSuccess = true;
         }
@@ -168,11 +189,18 @@ function updateMatchesFromScrapedData(scrapedMatches) {
   const teams = db.prepare('SELECT * FROM teams').all();
   let updatedCount = 0;
 
-  const updateMatchStmt = db.prepare(`
-    UPDATE matches 
-    SET home_score = ?, away_score = ?, status = 'finished' 
-    WHERE home_team_id = ? AND away_team_id = ? AND status = 'pending'
-  `);
+  // Helper para detectar la etapa eliminatoria
+  const detectStageFromNote = (note) => {
+    if (!note) return null;
+    const lowerNote = note.toLowerCase();
+    if (lowerNote.includes('round of 32')) return 'round_of_32';
+    if (lowerNote.includes('round of 16')) return 'round_of_16';
+    if (lowerNote.includes('quarter')) return 'quarters';
+    if (lowerNote.includes('semi')) return 'semis';
+    if (lowerNote.includes('third') || lowerNote.includes('3rd')) return 'third_place';
+    if (lowerNote.includes('final')) return 'final';
+    return null;
+  };
 
   db.transaction(() => {
     for (const match of scrapedMatches) {
@@ -188,10 +216,65 @@ function updateMatchesFromScrapedData(scrapedMatches) {
       );
 
       if (home && away) {
-        const info = updateMatchStmt.run(match.homeScore, match.awayScore, home.id, away.id);
-        if (info.changes > 0) {
-          updatedCount++;
-          console.log(`Partido Actualizado en BD: ${home.name} ${match.homeScore} - ${match.awayScore} ${away.name}`);
+        const stage = detectStageFromNote(match.altGameNote);
+
+        if (stage) {
+          // Fase eliminatoria (Play-offs)
+          // Buscar si hay algún partido local de la misma etapa que tenga a alguno de los dos equipos
+          const localMatch = db.prepare(`
+            SELECT * FROM matches 
+            WHERE stage = ? AND (home_team_id = ? OR away_team_id = ? OR home_team_id = ? OR away_team_id = ?)
+          `).get(stage, home.id, home.id, away.id, away.id);
+
+          if (localMatch) {
+            // Actualizar equipos locales para alinear con la realidad de internet, y cargar el marcador
+            const newStatus = match.isCompleted ? 'finished' : 'pending';
+            const info = db.prepare(`
+              UPDATE matches 
+              SET home_team_id = ?, away_team_id = ?, home_score = ?, away_score = ?, status = ?, date = 'api'
+              WHERE id = ?
+            `).run(home.id, away.id, match.homeScore, match.awayScore, newStatus, localMatch.id);
+
+            if (info.changes > 0) {
+              updatedCount++;
+              console.log(`Playoff Alineado y Actualizado: P${localMatch.match_number} (${stage}) -> ${home.name} vs ${away.name} | Status: ${newStatus}`);
+            }
+          } else {
+            // Si ninguno de los dos equipos estaba asignado en la BD local, buscamos algún casillero pendiente vacío
+            const placeholderMatch = db.prepare(`
+              SELECT * FROM matches 
+              WHERE stage = ? AND status = 'pending' AND home_team_id IS NULL AND away_team_id IS NULL
+              LIMIT 1
+            `).get(stage);
+
+            if (placeholderMatch) {
+              const newStatus = match.isCompleted ? 'finished' : 'pending';
+              const info = db.prepare(`
+                UPDATE matches 
+                SET home_team_id = ?, away_team_id = ?, home_score = ?, away_score = ?, status = ?, date = 'api'
+                WHERE id = ?
+              `).run(home.id, away.id, match.homeScore, match.awayScore, newStatus, placeholderMatch.id);
+
+              if (info.changes > 0) {
+                updatedCount++;
+                console.log(`Playoff Asignado en Placeholder: P${placeholderMatch.match_number} (${stage}) -> ${home.name} vs ${away.name} | Status: ${newStatus}`);
+              }
+            }
+          }
+        } else {
+          // Fase de grupos: solo actualizamos si está completado en la API
+          if (match.isCompleted) {
+            const info = db.prepare(`
+              UPDATE matches 
+              SET home_score = ?, away_score = ?, status = 'finished' 
+              WHERE home_team_id = ? AND away_team_id = ?
+            `).run(match.homeScore, match.awayScore, home.id, away.id);
+
+            if (info.changes > 0) {
+              updatedCount++;
+              console.log(`Grupo Actualizado: ${home.name} ${match.homeScore} - ${match.awayScore} ${away.name}`);
+            }
+          }
         }
       }
     }

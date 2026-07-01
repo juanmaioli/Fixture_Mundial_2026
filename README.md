@@ -77,6 +77,12 @@ La aplicación está contenerizada con soporte de persistencia de datos (volumen
 
 ## 📜 Historial de Cambios Recientes
 
+### v1.4.1
+- 🐛 **Soporte de play-offs pendientes y desempates:** Se habilitó la alineación en vivo de partidos de eliminación directa aún no jugados (estado pendiente) en el scraper.
+- 🐛 **Desempate de penales:** Se incorporó soporte para resolver empates en play-offs (ej. Alemania vs Paraguay) sumando un gol de diferencia simbólico al ganador de los penales.
+- 🐛 **Inmutabilidad de llaves:** Se bloqueó la sobreescritura de los partidos de play-offs que ya fueron alineados con internet.
+- 🐛 **Corrección en reinicio:** Se actualizó la lógica de reset para limpiar las marcas de alineación de play-offs.
+
 ### v1.4.0
 - 🚀 **Pre-llenado progresivo de play-offs:** Se modificó la lógica en el servicio de fixture para ubicar a las selecciones en la ronda de 16avos de final de forma incremental e inmediata apenas termina cada grupo, sin tener que esperar a que finalicen los 12 grupos. Los mejores terceros se siguen asignando al completarse la fase de grupos.
 
